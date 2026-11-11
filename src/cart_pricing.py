@@ -36,13 +36,22 @@ def calculate_subtotal(items: List[Dict[str, Any]]) -> float:
     return round(subtotal, 2)
 
 
-def calculate_tier_discount(subtotal: float, tier: str) -> float:
+def calculate_tier_discount(items: List[Dict[str, Any]], subtotal: float, tier: str) -> float:
     """
     Calculate the membership discount amount for a given subtotal and tier.
     """
     normalized_tier = tier.lower() if tier else "standard"
-    discount_rate = TIER_DISCOUNT_RATES.get(normalized_tier, 0.00)
-    return round(subtotal * discount_rate, 2)
+    discount_rate = TIER_DISCOUNT_RATES.get(normalized_tier, 0.0)
+
+    # get the item eligible for discount
+    # apply the discount rate to the item
+    discount_price = 0
+    for item in items:
+        if item.get("is_discountable") and item.get("category", "").lower() != "gift_card":
+            discount_price += (item.get("price", 0.0) * discount_rate) * item.get("quantity")
+
+
+    return round(discount_price, 2)
 
 
 def calculate_shipping_fee(items: List[Dict[str, Any]], discounted_subtotal: float) -> float:
@@ -114,7 +123,7 @@ def calculate_order_summary(cart: Dict[str, Any]) -> Dict[str, Any]:
     # Step 1: Gross Subtotal
     subtotal = calculate_subtotal(items)
 
-    discount_amount = calculate_tier_discount(subtotal, tier)
+    discount_amount = calculate_tier_discount(items, subtotal, tier)
 
     # Step 3: Discounted Subtotal
     discounted_subtotal = round(max(0.0, subtotal - discount_amount), 2)
